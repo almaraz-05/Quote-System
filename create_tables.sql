@@ -48,3 +48,4 @@ CREATE TABLE secret_note (
 
 INSERT INTO sales_associate (name, address, userid, password) VALUES ('Zoe Zuzzio', '123 Apple Lane', 'zoezuzzio', 'password');
 INSERT INTO sales_associate (name, address, userid, password) VALUES ('Mr. Krabs', '3541 Anchor Way', 'krabbypatty', 'money');
+INSERT INTO sales_associate (name, address, userid, password) VALUES ('Josue Almaraz', '321 Main Street', 'josue', 'password');
