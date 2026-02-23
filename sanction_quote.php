@@ -31,8 +31,7 @@ $stmt->execute([$quote_id]);
 // get all matching rows
 $line_items = $stmt->fetchAll();
 
-// Calculate total
-// add up all line item prices
+// Calculate total. Add up all line item prices.
 $subtotal = array_sum(array_column($line_items, 'price'));
 // percentage discount
 $is_percent = $quote['is_percent'] ?? 0;
