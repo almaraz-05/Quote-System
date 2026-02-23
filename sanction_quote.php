@@ -9,13 +9,17 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST' || !isset($_POST['quote_id'])) {
     die("Invalid request.");
 }
 
+// get quote ID from form submission
 $quote_id = $_POST['quote_id'];
 
-// Fetch quote
+// Prepare SQL statement to safely retrieve quote by ID
 $stmt = $pdo->prepare("SELECT * FROM quote WHERE quote_id = ?");
 $stmt->execute([$quote_id]);
+
+// fetch result as associative array
 $quote = $stmt->fetch();
 
+// if quote doesnt exist OR is already finalized
 if (!$quote || $quote['status'] !== 'finalized') {
     die("Quote not found or already sanctioned.");
 }
@@ -23,12 +27,18 @@ if (!$quote || $quote['status'] !== 'finalized') {
 // Fetch line items
 $stmt = $pdo->prepare("SELECT description, price FROM line_item WHERE quote_id = ?");
 $stmt->execute([$quote_id]);
+
+// get all matching rows
 $line_items = $stmt->fetchAll();
 
 // Calculate total
+// add up all line item prices
 $subtotal = array_sum(array_column($line_items, 'price'));
+// percentage discount
 $is_percent = $quote['is_percent'] ?? 0;
+// flat dollar discount
 $raw_discount = $quote['discount'] ?? 0;
+
 
 if ($is_percent) {
     $discount = ($raw_discount / 100) * $subtotal;
@@ -37,6 +47,8 @@ if ($is_percent) {
 }
 
 $total = $subtotal - $discount;
+
+// prevent negative totals
 if ($total < 0) $total = 0;
 
 // Update quote to sanctioned
@@ -44,15 +56,25 @@ $stmt = $pdo->prepare("UPDATE quote SET status = 'sanctioned', quote_price = ? W
 $stmt->execute([$total, $quote_id]);
 
 // Prepare and "send" email
+// get customer email from quote record
 $to = $quote['customer_email'];
+
+// email subject line
 $subject = "Your Quote from Our Company";
+
+// email headers from address + content type
 $headers = "From: no-reply@ourcompany.com\r\n";
 $headers .= "Content-Type: text/plain; charset=UTF-8\r\n";
 
+// start email body
 $message = "Dear Customer,\n\nHere is your quote:\n\n";
+
+// loop through each line and add to email
 foreach ($line_items as $item) {
     $message .= "- " . $item['description'] . ": $" . number_format($item['price'], 2) . "\n";
 }
+
+// if discount exists, show it
 if ($discount > 0) {
     if ($is_percent) {
         $message .= "\nDiscount: -{$raw_discount}% (Saved $" . number_format($discount, 2) . ")";
